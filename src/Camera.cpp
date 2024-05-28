@@ -77,6 +77,6 @@ glm::mat4 Camera::SetView()
 }
 glm::mat4 Camera::SetProjection(float aspect)
 {
-	glm::mat4 projection = glm::perspective(glm::radians(cameraFov), aspect, 0.1f, 10000.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(cameraFov), aspect, 0.001f, 10000.0f);
 	return projection;
 }

@@ -48,7 +48,7 @@ namespace MyApp {
 		void EnableDocking();//开启Docking特性
 		void ShowMenuBar();//显示菜单栏
 		bool ShowMessage(const char* message);//显示ImGui弹窗，而ImGui::OpenPopup("提示")用于弹出弹窗
-		bool ShowPathSetting();//显示ImGui弹窗，而ImGui::OpenPopup("工作路径设置")用于弹出弹窗
+		//bool ShowPathSetting();//显示ImGui弹窗，而ImGui::OpenPopup("工作路径设置")用于弹出弹窗
 
 	public:
 		void ShowMyApp();

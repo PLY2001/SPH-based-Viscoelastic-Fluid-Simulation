@@ -94,13 +94,13 @@ namespace MyApp {
 				ImGui::EndMenu();
 
 			}
-			if (ImGui::BeginMenu(" 设置 ")) {
-				if (ImGui::MenuItem("工作路径")) {
-					toLoadPathSetting = true;
-				}
-				ImGui::EndMenu();
-
-			}
+			//if (ImGui::BeginMenu(" 设置 ")) {
+			//	if (ImGui::MenuItem("工作路径")) {
+			//		toLoadPathSetting = true;
+			//	}
+			//	ImGui::EndMenu();
+			//
+			//}
 			ImGui::EndMenuBar();
 		}
 
@@ -108,13 +108,13 @@ namespace MyApp {
 		if (toLoadProjectAddress)
 		{
 			ImGui::OpenPopup("提示");
-			toLoadProjectAddress = ShowMessage("github.com/PLY2001/SWApp");
+			toLoadProjectAddress = ShowMessage("github.com/PLY2001/SPH-based-Viscoelastic-Fluid-Simulation");
 		}
-		if (toLoadPathSetting)
-		{
-			ImGui::OpenPopup("工作路径设置:config.ini");
-			toLoadPathSetting = ShowPathSetting();
-		}
+		//if (toLoadPathSetting)
+		//{
+		//	ImGui::OpenPopup("工作路径设置:config.ini");
+		//	toLoadPathSetting = ShowPathSetting();
+		//}
 	}
 
 	bool  MyApplication::ShowMessage(const char* message)
@@ -144,51 +144,51 @@ namespace MyApp {
 		return true;
 	}
 	
-	bool MyApplication::ShowPathSetting()
-	{
-		// Always center this window when appearing
-		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-		if (ImGui::BeginPopupModal("工作路径设置:config.ini", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-		{
-			ImGui::Text("【SW零件库】");
-			ImGui::SameLine();
-			ImGui::Text(CADPath.c_str());
-			ImGui::Text("【SW临时文件】");
-			ImGui::SameLine();
-			ImGui::Text(CADTempPath.c_str());
-			ImGui::Text("【SW零件略缩图库】");
-			ImGui::SameLine();
-			ImGui::Text(ModelPictureExportPath.c_str());
-			ImGui::Text("【MBD视图特征库】");
-			ImGui::SameLine();
-			ImGui::Text(PictureExportPathForMBD.c_str());
-			ImGui::Text("【无MBD视图特征库】");
-			ImGui::SameLine();
-			ImGui::Text(PictureExportPathFornoMBD.c_str());
-			ImGui::Text("【Python库】");
-			ImGui::SameLine();
-			ImGui::Text(PythonHome.c_str());
-			ImGui::Text("【Python神经网络项目】");
-			ImGui::SameLine();
-			ImGui::Text(PythonProjectPath.c_str());
-
-			ImGui::Separator();
-
-
-			if (ImGui::Button("关闭", ImVec2(120, 0)))
-			{
-
-				ImGui::CloseCurrentPopup();
-				ImGui::EndPopup();
-				return false;
-
-			}
-			ImGui::EndPopup();
-		}
-		return true;
-	}
+	//bool MyApplication::ShowPathSetting()
+	//{
+	//	// Always center this window when appearing
+	//	ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+	//	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	//
+	//	if (ImGui::BeginPopupModal("工作路径设置:config.ini", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	//	{
+	//		ImGui::Text("【SW零件库】");
+	//		ImGui::SameLine();
+	//		ImGui::Text(CADPath.c_str());
+	//		ImGui::Text("【SW临时文件】");
+	//		ImGui::SameLine();
+	//		ImGui::Text(CADTempPath.c_str());
+	//		ImGui::Text("【SW零件略缩图库】");
+	//		ImGui::SameLine();
+	//		ImGui::Text(ModelPictureExportPath.c_str());
+	//		ImGui::Text("【MBD视图特征库】");
+	//		ImGui::SameLine();
+	//		ImGui::Text(PictureExportPathForMBD.c_str());
+	//		ImGui::Text("【无MBD视图特征库】");
+	//		ImGui::SameLine();
+	//		ImGui::Text(PictureExportPathFornoMBD.c_str());
+	//		ImGui::Text("【Python库】");
+	//		ImGui::SameLine();
+	//		ImGui::Text(PythonHome.c_str());
+	//		ImGui::Text("【Python神经网络项目】");
+	//		ImGui::SameLine();
+	//		ImGui::Text(PythonProjectPath.c_str());
+	//
+	//		ImGui::Separator();
+	//
+	//
+	//		if (ImGui::Button("关闭", ImVec2(120, 0)))
+	//		{
+	//
+	//			ImGui::CloseCurrentPopup();
+	//			ImGui::EndPopup();
+	//			return false;
+	//
+	//		}
+	//		ImGui::EndPopup();
+	//	}
+	//	return true;
+	//}
 
 
 }
