@@ -4,7 +4,7 @@ InstanceBuffer::InstanceBuffer(unsigned int size, const glm::mat4* data)
 {
 	glGenBuffers(1, &RendererID);
 	glBindBuffer(GL_ARRAY_BUFFER, RendererID);
-	//glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);//预设空间 release报错
+	glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);//预设空间
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -38,6 +38,13 @@ void InstanceBuffer::SetDatamat4(unsigned int size, const glm::mat4* data)
 {
 	glBindBuffer(GL_ARRAY_BUFFER, RendererID);
 	glBufferData(GL_ARRAY_BUFFER, size,data, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void InstanceBuffer::RefreshDatamat4(unsigned int size, const glm::mat4* data)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, RendererID);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 

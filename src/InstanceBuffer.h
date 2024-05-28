@@ -12,4 +12,5 @@ public:
 	InstanceBuffer() = default;
 	void AddInstanceBuffermat4(unsigned int vaID, unsigned int AttribIndex);
 	void SetDatamat4(unsigned int size, const glm::mat4* data);
+	void RefreshDatamat4(unsigned int size, const glm::mat4* data);
 };

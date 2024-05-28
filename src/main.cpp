@@ -34,6 +34,9 @@
 
 MyApp::MyApplication& App = MyApp::MyApplication::GetInstance();//获取唯一的实例引用
 
+std::vector<glm::mat4> modelMatrixList;
+glm::mat4 planeModelMatrix;
+
 //摄像机控制
 Camera camera;
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
@@ -295,6 +298,7 @@ void SortAreaOutputImage(PointMode mode, Texture& areaOutputImage, Texture& area
 	areaOutputStartIndexImage.TransferDataToTextureFloat((float*)startIndexData);
 	areaOutputImage.TransferDataToTextureFloat((float*)data);
 	delete[](startIndexData);
+	delete[](data);
 
 }
 
@@ -568,11 +572,17 @@ void LoadModel(std::unordered_map<std::string, Model>& modelMap, std::unordered_
 
 	//创建实例
 	instanceMap.clear();
-	for (auto model : modelMap) {
-		InstanceBuffer instance(100 * sizeof(glm::mat4), &model.second.GetModelMatrix());
-		instance.AddInstanceBuffermat4(model.second.meshes[0].vaID, 3);
-		instanceMap[model.first] = instance;
-	}
+
+	modelMatrixList.resize(CSImageWidth * CSImageHeight * CSImageDepth);
+	
+	InstanceBuffer instance(CSImageWidth3D*CSImageHeight3D*CSImageDepth3D * sizeof(glm::mat4), modelMatrixList.data());
+	instance.AddInstanceBuffermat4(modelMap["sphere.obj"].meshes[0].vaID, 3);
+	instanceMap["sphere.obj"] = instance;
+
+	InstanceBuffer instancePlane(sizeof(glm::mat4), &planeModelMatrix);
+	instancePlane.AddInstanceBuffermat4(modelMap["plane.obj"].meshes[0].vaID, 3);
+	instanceMap["plane.obj"] = instancePlane;
+	
 }
 
 template<typename T>
@@ -711,8 +721,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	style.WindowMenuButtonPosition = 1;
 
 
-
-
 	//模型哈希表(毫米)
 	std::unordered_map<std::string, Model> modelMap;
 
@@ -722,13 +730,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	//加载模型
 	LoadModel(modelMap, instanceMap);
 
+
 	//创建变换矩阵
-    std::vector<glm::mat4> modelMatrixList;
-	modelMatrixList.resize(CSImageWidth * CSImageHeight * CSImageDepth);
 	glm::mat4 viewMatrix;
 	glm::mat4 projectionMatrix;
 
-	glm::mat4 planeModelMatrix;
 
 	//设置直射光VP变换矩阵
 	glm::mat4 LightProjectionMatrix = glm::ortho(-2.0f, 2.0f, -2.0f, 2.0f, 0.01f, 100.0f);
@@ -873,11 +879,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		for (glm::mat4& modelMatrix : modelMatrixList) {
 			modelMatrix = modelMap["sphere.obj"].GetModelMatrix();
 		}
-		instanceMap["sphere.obj"].SetDatamat4(sizeof(glm::mat4)* modelMatrixList.size(), modelMatrixList.data());
+		instanceMap["sphere.obj"].RefreshDatamat4(sizeof(glm::mat4)* modelMatrixList.size(), modelMatrixList.data());
 
 		planeModelMatrix = modelMap["plane.obj"].GetDefaultModelMatrix();
 		planeModelMatrix = glm::translate(planeModelMatrix, glm::vec3(0.0f,-CSSpaceHeight/2.0f,0.0f));
-		instanceMap["plane.obj"].SetDatamat4(sizeof(glm::mat4), &planeModelMatrix);
+		instanceMap["plane.obj"].RefreshDatamat4(sizeof(glm::mat4), &planeModelMatrix);
 		
 
 		//向uniform缓冲对象填入view、projection矩阵数据
