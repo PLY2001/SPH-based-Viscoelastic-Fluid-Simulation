@@ -42,6 +42,9 @@ Camera camera;
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+
+
 
 enum class MouseState {
 	OutOfDisplay, InDisplay
@@ -76,6 +79,7 @@ unsigned int WinHeight = 900;// 670;
 //渲染显示尺寸
 unsigned int DisplayWidth = 1030;
 unsigned int DisplayHeight = 793;
+std::shared_ptr<FrameBuffer> display;
 //密度图渲染显示尺寸
 //unsigned int DensityDisplayWidth = 300;
 //unsigned int DensityDisplayHeight = 300;
@@ -638,6 +642,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);//每当检测到窗口尺寸改变就回调framebuffer_size_callback函数
+
 
 	//LONG_PTR exst = ::GetWindowLongPtr(Handle, GWL_EXSTYLE);
 	//::SetWindowLongPtr(Handle, GWL_EXSTYLE, exst | WS_EX_ACCEPTFILES);
@@ -813,8 +819,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 	InitialData(PointMode::xy, pointInputImage, areaInputImage, areaInputStartIndexImage);
 
-	FrameBuffer display(DisplayWidth, DisplayHeight);
-	display.GenTexture2D();
+	display.reset(new FrameBuffer(DisplayWidth, DisplayHeight));
+	display->GenTexture2D();
 
 	//FrameBuffer density(DensityDisplayWidth, DensityDisplayHeight);
 	//density.GenTexture2D();
@@ -1134,7 +1140,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		//pass1
 		glViewport(0, 0, DisplayWidth, DisplayHeight);//修改视口尺寸
-		display.Bind();//framebuffer
+		display->Bind();//framebuffer
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
 		renderer.ClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -1197,7 +1203,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		}
 
-		display.Unbind();//framebuffer
+		display->Unbind();//framebuffer
 		glViewport(0, 0, WinWidth, WinHeight);//还原视口尺寸
 
 
@@ -1233,7 +1239,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		ImGui::Begin("显示");
 		ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::Image((GLuint*)display.GetTexID(), ImVec2(DisplayWidth, DisplayHeight), ImVec2(0, 1),  ImVec2(1, 0), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 0.5f));
+		ImGui::Image((GLuint*)display->GetTexID(), ImVec2(DisplayWidth, DisplayHeight), ImVec2(0, 1),  ImVec2(1, 0), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 0.5f));
 		ImVec2 vMin = ImGui::GetWindowContentRegionMin();
 		ImVec2 vMax = ImGui::GetWindowContentRegionMax();
 		vMin.x += ImGui::GetWindowPos().x;
@@ -1394,5 +1400,17 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 		mouseRole = MouseRole::UI;
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
+
+}
+
+
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+	WinWidth = width;
+	WinHeight = height;
+	glViewport(0, 0, WinWidth, WinHeight);//视口变换
+	DisplayWidth = WinWidth - (1440 - 1030);
+	DisplayHeight = WinHeight - (900 - 793);
+	display->ResetWindow(DisplayWidth, DisplayHeight);
 
 }

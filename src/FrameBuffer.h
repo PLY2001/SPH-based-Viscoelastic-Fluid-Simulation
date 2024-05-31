@@ -21,6 +21,7 @@ private:
 
 public:
 	FrameBuffer(unsigned int WinWidth,unsigned int WinHeight);
+	FrameBuffer() = default;
 	void GenTexture2D();
 	void GenTexture2DMultiSample(unsigned int samples);
 	void GenTexture2DShadowMap();
