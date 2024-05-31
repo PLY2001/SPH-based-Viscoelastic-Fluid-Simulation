@@ -28,4 +28,5 @@ public:
 	glm::mat4 SetProjection(float aspect);
 	inline glm::vec3 GetPosition() const { return cameraPos; }
 	inline void SetFirstMouse() { firstMouse = true; }
+	void SetCamera(glm::vec3 pos, glm::vec3 front, glm::vec3 up, float fov, float yaw, float pitch);
 };

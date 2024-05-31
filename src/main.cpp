@@ -68,7 +68,7 @@ VisualMode visualMode = VisualMode::Density;//可视化类型
 float deltaTime = 0;//每次循环耗时
 float lastTime = 0;//上一次记录时间
 
-glm::vec3 DirectLightPos = glm::vec3(40.0f, 0.0f, 0.0f);
+//glm::vec3 DirectLightPos = glm::vec3(40.0f, 0.0f, 10.0f);
 
 //窗口尺寸
 unsigned int WinWidth = 1440;// 1330;
@@ -80,34 +80,34 @@ unsigned int DisplayHeight = 793;
 //unsigned int DensityDisplayWidth = 300;
 //unsigned int DensityDisplayHeight = 300;
 //shadow map
-unsigned int ShadowMapWidth = 2048;
-unsigned int ShadowMapHeight = 2048;
+unsigned int ShadowMapWidth = 4096;
+unsigned int ShadowMapHeight = 4096;
 //compute shader 贴图尺寸
-#define CSImageWidth 30
-#define CSImageHeight 30
-#define CSImageDepth 1
+#define CSImageWidth 1
+#define CSImageHeight 100
+#define CSImageDepth 100
 #define CSImageWidth3D 20
 #define CSImageHeight3D 20
 #define CSImageDepth3D 20
 //compute shader 组和线程大小
-#define Group_a 3
-#define Group_b 3
-#define Group_c 1
+#define Group_a 1
+#define Group_b 10
+#define Group_c 10
 #define Group_a_3D 4
 #define Group_b_3D 4
 #define Group_c_3D 4
-#define Invocation_a 10
+#define Invocation_a 1
 #define Invocation_b 10
-#define Invocation_c 1
+#define Invocation_c 10
 #define Invocation_a_3D 5
 #define Invocation_b_3D 5
 #define Invocation_c_3D 5
 //compute shader 流体区域
 #define SPACE_MIN_SCALE 0.1f
 #define SPACE_MAX_SCALE 10.0f
-#define SPACE_X 1.5f
-#define SPACE_Y 1.5f
-#define SPACE_Z 0.05f
+#define SPACE_X 0.05f
+#define SPACE_Y 5.0f
+#define SPACE_Z 5.0f
 #define SPACE_X_3D 2.0f
 #define SPACE_Y_3D 2.0f
 #define SPACE_Z_3D 2.0f
@@ -140,10 +140,10 @@ float gravity = 0.0f;
 //#define Invocation_Density_b Invocation_b
 //#define Invocation_Density_c 1
 //密度采样范围
-#define SmoothingRadiusDefault 0.1f
+#define SmoothingRadiusDefault 0.2f
 #define SmoothingRadiusDefault3D 0.25f
 float SmoothingRadiusMin = 0.1f;
-float SmoothingRadiusMax = (CSSpaceWidth / 2.0f);
+float SmoothingRadiusMax = (glm::min(CSSpaceHeight,CSSpaceDepth) / 2.0f);
 float SmoothingRadius = glm::min(SmoothingRadiusDefault, SmoothingRadiusMax);
 //密度力量大小, 力量过大会导致液体表面有飞球
 #define FORCE_MIN_SCALE 0.0f
@@ -166,19 +166,19 @@ float viscositySize = 0.0f;
 //#define FORCENEAR_MAX_SCALE FORCE_MAX_SCALE
 float forceNearSize = FORCE_SET_SCALE/10.0f;
 //区域个数
-int areaCount_x = ceil(SPACE_MAX_SCALE / SmoothingRadiusMin);
+int areaCount_x = 1;
 int areaCount_y = ceil(SPACE_MAX_SCALE / SmoothingRadiusMin);
-int areaCount_z = 1;
+int areaCount_z = ceil(SPACE_MAX_SCALE / SmoothingRadiusMin);;
 int areaCount_x_3D = ceil(SPACE_MAX_SCALE / SmoothingRadiusMin);
 int areaCount_y_3D = ceil(SPACE_MAX_SCALE / SmoothingRadiusMin);
 int areaCount_z_3D = ceil(SPACE_MAX_SCALE / SmoothingRadiusMin);
-int areaCountImageWidth = areaCount_x;
+int areaCountImageWidth = areaCount_y;
 int areaCountImageWidth3D = ceil(sqrt(areaCount_x_3D * areaCount_y_3D * areaCount_z_3D));
-int areaCountImageHeight = areaCount_y;
+int areaCountImageHeight = areaCount_z;
 int areaCountImageHeight3D = areaCountImageWidth3D;
-int areaCertainCount_x = ceil(CSSpaceWidth / SmoothingRadius);
+int areaCertainCount_x = 1;
 int areaCertainCount_y = ceil(CSSpaceHeight / SmoothingRadius);
-int areaCertainCount_z = 1;
+int areaCertainCount_z = ceil(CSSpaceDepth / SmoothingRadius);;
 int areaCertainCount_x_3D = ceil(CSSpaceWidth / SmoothingRadius);
 int areaCertainCount_y_3D = ceil(CSSpaceHeight / SmoothingRadius);
 int areaCertainCount_z_3D = ceil(CSSpaceDepth / SmoothingRadius);
@@ -189,7 +189,7 @@ int areaBias_x_3D = (areaCount_x_3D - areaCertainCount_x_3D) / 2.0f;
 int areaBias_y_3D = (areaCount_y_3D - areaCertainCount_y_3D) / 2.0f;
 int areaBias_z_3D = (areaCount_z_3D - areaCertainCount_z_3D) / 2.0f;
 //可视化最大速度
-float MaxVelocity = 10.0f;
+float MaxVelocity = 5.0f;
 #define VELOCITY_MIN_SCALE 1.0f
 #define VELOCITY_MAX_SCALE 100.0f
 //边界排斥力
@@ -211,15 +211,15 @@ bool cmp(Point a, Point b) {
 void SortAreaOutputImage(PointMode mode, Texture& areaOutputImage, Texture& areaOutputStartIndexImage) {
 	Point* data = (Point*)areaOutputImage.GetDataFromTextureFloat(4);
 
-	int ImageWidth;
-	int ImageHeight;
-	int ImageDepth;
-	int aCountImageWidth;
-	int aCountImageHeight;
-	int aCountImageDepth;
-	int aCertainCount_x;
-	int aCertainCount_y;
-	int aCertainCount_z;
+	int ImageWidth = 0;
+	int ImageHeight = 0;
+	int ImageDepth = 0;
+	int aCountImageWidth = 0;
+	int aCountImageHeight = 0;
+	int aCountImageDepth = 0;
+	int aCertainCount_x = 0;
+	int aCertainCount_y = 0;
+	int aCertainCount_z = 0;
 
 	switch (mode)
 	{
@@ -266,8 +266,13 @@ void SortAreaOutputImage(PointMode mode, Texture& areaOutputImage, Texture& area
 	//float g = data[0].v;
 
 	Point* startIndexData = new Point[aCountImageWidth * aCountImageHeight];
+	for (int i = 0; i < aCountImageWidth * aCountImageHeight; ++i) {
+		startIndexData[i].i = 0.0f;
+		startIndexData[i].u = 0.0f;
+		startIndexData[i].v = 0.0f;
+	}
 	int index = 0;
-	int area_index = data[index].i;//areaBias_x + areaBias_y * areaCount_x + areaBias_z * areaCount_x * areaCount_y; ////494646  
+	int area_index = int(data[index].i);//areaBias_x + areaBias_y * areaCount_x + areaBias_z * areaCount_x * areaCount_y; ////494646  
 	int next_area_index = area_index;
 	int pointCount = 0;
 	bool stop = false;
@@ -280,7 +285,7 @@ void SortAreaOutputImage(PointMode mode, Texture& areaOutputImage, Texture& area
 			if (index > ImageWidth * ImageHeight * ImageDepth - 1) {
 				stop = true;
 			}
-			next_area_index = data[index].i;//下一个球所属的区域
+			next_area_index = int(data[index].i);//下一个球所属的区域
 		}
 		startIndexData[area_index].u = pointCount;
 		startIndexData[area_index].v = 0.0f;
@@ -304,15 +309,15 @@ void SortAreaOutputImage(PointMode mode, Texture& areaOutputImage, Texture& area
 
 void InitialData(PointMode mode, Texture& pointInputImage,Texture& areaInputImage,Texture& areaInputStartIndexImage) {
 
-	int ImageWidth;
-	int ImageHeight;
-	int ImageDepth;
-	int aBias_x;
-	int aBias_y;
-	int aBias_z;
-	int aCount_x;
-	int	aCount_y;
-	int	aCount_z;
+	int ImageWidth = 0;
+	int ImageHeight = 0;
+	int ImageDepth = 0;
+	int aBias_x = 0;
+	int aBias_y = 0;
+	int aBias_z = 0;
+	int aCount_x = 0;
+	int	aCount_y = 0;
+	int	aCount_z = 0;
 
 	switch (mode)
 	{
@@ -343,16 +348,22 @@ void InitialData(PointMode mode, Texture& pointInputImage,Texture& areaInputImag
 	}
 
 	float* inputData = new float[ImageWidth * ImageHeight * ImageDepth * 4 * 2];
+	for (int i = 0; i < ImageWidth * ImageHeight * ImageDepth * 4 * 2; ++i) {
+		inputData[i] = 0.0f;
+	}
 	float* areaData = new float[ImageWidth * ImageHeight * ImageDepth * 4];
+	for (int i = 0; i < ImageWidth * ImageHeight * ImageDepth * 4; ++i) {
+		areaData[i] = 0.0f;
+	}
 	glm::vec3 gap = glm::vec3(CSSpaceWidth / ImageWidth, CSSpaceHeight / ImageHeight, CSSpaceDepth / ImageDepth);
-	float uv_z;
-	int uv_xy_i;
-	float uv_x;
-	float uv_y;
-	glm::vec3 position;
-	int area_x;
-	int area_y;
-	int area_z;
+	int uv_z =0;
+	int uv_xy_i=0;
+	int uv_x = 0;
+	int uv_y = 0;
+	glm::vec3 position = glm::vec3(0.0f);
+	int area_x=0;
+	int area_y=0;
+	int area_z=0;
 	for (int i = 0; i < ImageWidth * ImageHeight * ImageDepth * 4 * 2; ++i) {
 		if (i < ImageWidth * ImageHeight * ImageDepth * 4) {
 			uv_xy_i = i / 4 % (ImageWidth * ImageHeight);
@@ -405,18 +416,20 @@ void InitialData(PointMode mode, Texture& pointInputImage,Texture& areaInputImag
 	delete[](areaData);
 }
 
-void Reset(PointMode mode, Texture& pointInputImage, Texture& areaInputImage, Texture& areaInputStartIndexImage, std::vector<glm::mat4>& modelMatrixList) {
+void Reset(PointMode mode, Texture& pointInputImage, Texture& areaInputImage, Texture& areaInputStartIndexImage) {
 	switch (mode)
 	{
 	case PointMode::xy:
 		{
+			camera.SetCamera(glm::vec3(40.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f),10.0f,180.0f,0.0f);
+
 			CSSpaceWidth = SPACE_X;
 			CSSpaceHeight = SPACE_Y;
 			CSSpaceDepth = SPACE_Z;
 
 			gravity = 0.0f;
 
-			SmoothingRadiusMax = (CSSpaceWidth / 2.0f);
+			SmoothingRadiusMax = (glm::min(CSSpaceHeight, CSSpaceDepth) / 2.0f);
 			SmoothingRadius = glm::min(SmoothingRadiusDefault, SmoothingRadiusMax);
 
 			forceSize = FORCE_SET_SCALE;
@@ -444,13 +457,15 @@ void Reset(PointMode mode, Texture& pointInputImage, Texture& areaInputImage, Te
 
 	case PointMode::xyz:
 		{
+			camera.SetCamera(glm::vec3(4.0f, 4.0f, 4.0f), glm::vec3(-1.0f, -1.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), 30.0f, -135.0f, -35.26439f);
+
 			CSSpaceWidth = SPACE_X_3D;
 			CSSpaceHeight = SPACE_Y_3D;
 			CSSpaceDepth = SPACE_Z_3D;
 
 			gravity = 0.0f;
 
-			SmoothingRadiusMax = (CSSpaceWidth / 2.0f);
+			SmoothingRadiusMax = (glm::min(glm::min(CSSpaceHeight, CSSpaceDepth), CSSpaceWidth) / 2.0f);
 			SmoothingRadius = glm::min(SmoothingRadiusDefault3D, SmoothingRadiusMax);
 
 			forceSize = FORCE_SET_SCALE;
@@ -575,7 +590,7 @@ void LoadModel(std::unordered_map<std::string, Model>& modelMap, std::unordered_
 
 	modelMatrixList.resize(CSImageWidth * CSImageHeight * CSImageDepth);
 	
-	InstanceBuffer instance(CSImageWidth3D*CSImageHeight3D*CSImageDepth3D * sizeof(glm::mat4), modelMatrixList.data());
+	InstanceBuffer instance(glm::max(CSImageWidth3D*CSImageHeight3D*CSImageDepth3D, CSImageWidth * CSImageHeight * CSImageDepth) * sizeof(glm::mat4), modelMatrixList.data());
 	instance.AddInstanceBuffermat4(modelMap["sphere.obj"].meshes[0].vaID, 3);
 	instanceMap["sphere.obj"] = instance;
 
@@ -737,8 +752,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 
 	//设置直射光VP变换矩阵
-	glm::mat4 LightProjectionMatrix = glm::ortho(-2.0f, 2.0f, -2.0f, 2.0f, 0.01f, 100.0f);
-	glm::mat4 LightViewMatrix = glm::lookAt(glm::vec3(20.0f,20.0f,0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	glm::mat4 LightProjectionMatrix = glm::ortho(-4.0f, 4.0f, -4.0f, 4.0f, 0.01f, 100.0f);
+	glm::mat4 LightViewMatrix = glm::lookAt(glm::vec3(20.0f,20.0f,5.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
 	
     //Shader
@@ -772,8 +787,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	float* parameterData = new float[CSParameterWidth * CSParameterHeight * 4];
 
 	//Texture densityImage(CSImageWidth, CSImageWidth);//密度图
-	Texture predictDensityImage(CSImageWidth * CSImageWidth, CSImageDepth);//预测密度图 //predict_density,predict_neardensity
-	Texture predictDensityImage3D(CSImageWidth3D* CSImageWidth3D, CSImageDepth3D);//预测密度图 //predict_density,predict_neardensity
+	Texture predictDensityImage(CSImageWidth * CSImageHeight, CSImageDepth);//预测密度图 //predict_density,predict_neardensity
+	Texture predictDensityImage3D(CSImageWidth3D* CSImageHeight3D, CSImageDepth3D);//预测密度图 //predict_density,predict_neardensity
 
 	Texture areaInputImage(CSImageWidth* CSImageHeight, CSImageDepth);//所属区域数组 i,0,u,v
 	Texture areaInputImage3D(CSImageWidth3D* CSImageHeight3D, CSImageDepth3D);//所属区域数组 i,0,u,v
@@ -837,19 +852,22 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		//forceNearSize = forceSize;
 		forceNearSize = forceSize / 10.0f;
 
-		SmoothingRadiusMax = (CSSpaceWidth / 2.0f);
 
 		switch (pointMode)
 		{
 		case PointMode::xy:
-			areaCertainCount_x = ceil(CSSpaceWidth / SmoothingRadius);
+			SmoothingRadiusMax = (glm::min(CSSpaceHeight,CSSpaceDepth) / 2.0f);
+
+			areaCertainCount_x = 1;
 			areaCertainCount_y = ceil(CSSpaceHeight / SmoothingRadius);
-			areaCertainCount_z = 1;
+			areaCertainCount_z = ceil(CSSpaceDepth / SmoothingRadius);;
 			areaBias_x = (areaCount_x - areaCertainCount_x) / 2.0f;
 			areaBias_y = (areaCount_y - areaCertainCount_y) / 2.0f;
 			areaBias_z = (areaCount_z - areaCertainCount_z) / 2.0f;
 			break;
 		case PointMode::xyz:
+			SmoothingRadiusMax = (glm::min(glm::min(CSSpaceHeight, CSSpaceDepth),CSSpaceWidth) / 2.0f);
+
 			areaCertainCount_x_3D = ceil(CSSpaceWidth / SmoothingRadius);
 			areaCertainCount_y_3D = ceil(CSSpaceHeight / SmoothingRadius);
 			areaCertainCount_z_3D = ceil(CSSpaceDepth / SmoothingRadius);
@@ -960,12 +978,17 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		//预测position
 		switch (pointMode)
 		{
-		case PointMode::xy:
+		case PointMode::xy: {
 			pointInputImage.BindComputeRead(0);
 			predictPointOutputImage.BindComputeWrite(1);
 			parameterImage.BindComputeRead(2);
 			predictAreaOutputImage.BindComputeWrite(3);
 			computePositionPredictShader.BindCompute(Group_a, Group_b, Group_c);
+
+			//float* data = predictPointOutputImage.GetDataFromTextureFloat(4);
+			//for (int i = CSImageDepth * CSImageHeight * 4; i < CSImageDepth * CSImageHeight * 4*2; i += 4) {
+			//	printf("%f,%f\n", data[i + 1], data[i + 2]);
+			//}
 
 			//排序predictAreaOutputImage
 			SortAreaOutputImage(pointMode, predictAreaOutputImage, predictAreaOutputStartIndexImage);//去掉后从20fps提升到70fps
@@ -977,6 +1000,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			predictAreaOutputImage.BindComputeRead(3);
 			predictAreaOutputStartIndexImage.BindComputeRead(4);
 			computeDensityPredictShader.BindCompute(Group_a, Group_b, Group_c);
+
+
 
 			//更新
 			pointInputImage.BindComputeRead(0);
@@ -1008,6 +1033,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			parameterImage.BindComputeRead(2);
 			computeRefreshAreaStartIndexImageShader.BindCompute(areaCountImageWidth, areaCountImageHeight, 1);
 			break;
+		}
 		case PointMode::xyz:
 			pointInputImage3D.BindComputeRead(0);
 			predictPointOutputImage3D.BindComputeWrite(1);
@@ -1016,7 +1042,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			computePositionPredictShader3D.BindCompute(Group_a_3D, Group_b_3D, Group_c_3D);
 
 			//排序predictAreaOutputImage
-			SortAreaOutputImage(pointMode, predictAreaOutputImage3D, predictAreaOutputStartIndexImage3D);//去掉后从20fps提升到70fps
+			SortAreaOutputImage(pointMode, predictAreaOutputImage3D, predictAreaOutputStartIndexImage3D);//去掉后每帧从15ms变为5ms
 
 			//预测density
 			predictPointOutputImage3D.BindComputeRead(0);
@@ -1064,44 +1090,46 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		//pass0
 
 		//ShadowMap
-		glViewport(0, 0, ShadowMapWidth, ShadowMapHeight);//修改视口尺寸
-		//将光源当作正交摄像头的VP变换矩阵，M矩阵当然还是沿用各物体的。
-		
-		depthShader.Bind();
-		depthShader.SetUniformMat4("view", LightViewMatrix);
-		depthShader.SetUniformMat4("projection", LightProjectionMatrix);
-		switch (pointMode)
+		if(pointMode == PointMode::xyz)
 		{
-		case PointMode::xy:
-			pointInputImage.BindComputeRead(0);
-			break;
-		case PointMode::xyz:
-			pointInputImage3D.BindComputeRead(0);
-			break;
-		default:
-			break;
+			glViewport(0, 0, ShadowMapWidth, ShadowMapHeight);//修改视口尺寸
+			//将光源当作正交摄像头的VP变换矩阵，M矩阵当然还是沿用各物体的。
+			depthShader.Bind();
+			depthShader.SetUniformMat4("view", LightViewMatrix);
+			depthShader.SetUniformMat4("projection", LightProjectionMatrix);
+			switch (pointMode)
+			{
+			case PointMode::xy:
+				pointInputImage.BindComputeRead(0);
+				break;
+			case PointMode::xyz:
+				pointInputImage3D.BindComputeRead(0);
+				break;
+			default:
+				break;
+			}
+			parameterImage.BindComputeRead(1);
+			framebufferSM.Bind();//绑定帧缓冲对象，接收深度
+			renderer.ClearDepth();//只需清除深度，不需清除颜色
+			renderer.CullFace(0);
+
+			switch (pointMode)
+			{
+			case PointMode::xy:
+				modelMap["sphere.obj"].DrawInstanced(depthShader, CSImageWidth * CSImageHeight * CSImageDepth);
+				break;
+			case PointMode::xyz:
+				modelMap["sphere.obj"].DrawInstanced(depthShader, CSImageWidth3D * CSImageHeight3D * CSImageDepth3D);
+				break;
+			default:
+				break;
+			}
+
+			depthShader.Unbind();
+			framebufferSM.Unbind();
+
+			glViewport(0, 0, WinWidth, WinHeight);//还原视口尺寸
 		}
-		parameterImage.BindComputeRead(1);
-		framebufferSM.Bind();//绑定帧缓冲对象，接收深度
-		renderer.ClearDepth();//只需清除深度，不需清除颜色
-		renderer.CullFace(0);
-		
-		switch (pointMode)
-		{
-		case PointMode::xy:
-			modelMap["sphere.obj"].DrawInstanced(depthShader, CSImageWidth * CSImageHeight * CSImageDepth);
-			break;
-		case PointMode::xyz:
-			modelMap["sphere.obj"].DrawInstanced(depthShader, CSImageWidth3D * CSImageHeight3D * CSImageDepth3D);
-			break;
-		default:
-			break;
-		}
-		
-		depthShader.Unbind();
-		framebufferSM.Unbind();
-		
-		glViewport(0, 0, WinWidth, WinHeight);//还原视口尺寸
 
 
 		//pass1
@@ -1138,6 +1166,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		shader.SetUniformMat4("projection", LightProjectionMatrix);
 		shader.SetUniform1f("MaxVelocity", MaxVelocity);
 		shader.SetUniform1i("VisualMode", (int)visualMode);
+		shader.SetUniform1i("PointMode", (int)pointMode);
 		switch (pointMode)
 		{
 		case PointMode::xy:
@@ -1155,14 +1184,18 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		DrawSpace(spaceShader, glm::vec3(-CSSpaceWidth / 2.0f, -CSSpaceHeight / 2.0f, -CSSpaceDepth / 2.0f), glm::vec3(CSSpaceWidth / 2.0f, CSSpaceHeight / 2.0f, CSSpaceDepth / 2.0f));
 
 		//平面
-		planeShader.Bind();
-		glActiveTexture(GL_TEXTURE5);
-		glBindTexture(GL_TEXTURE_2D, framebufferSM.GetTexID());
-		planeShader.SetUniform1i("shadowmap", 5);
-		planeShader.SetUniformMat4("view", LightViewMatrix);
-		planeShader.SetUniformMat4("projection", LightProjectionMatrix);
-		modelMap["plane.obj"].Draw(planeShader);
-		planeShader.Unbind();
+		if(pointMode == PointMode::xyz)
+		{
+			planeShader.Bind();
+			glActiveTexture(GL_TEXTURE5);
+			glBindTexture(GL_TEXTURE_2D, framebufferSM.GetTexID());
+			planeShader.SetUniform1i("shadowmap", 5);
+			planeShader.SetUniformMat4("view", LightViewMatrix);
+			planeShader.SetUniformMat4("projection", LightProjectionMatrix);
+			modelMap["plane.obj"].Draw(planeShader);
+			planeShader.Unbind();
+
+		}
 
 		display.Unbind();//framebuffer
 		glViewport(0, 0, WinWidth, WinHeight);//还原视口尺寸
@@ -1225,20 +1258,28 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		//ImGui::Image((GLuint*)position.GetTexID(), ImVec2(DensityDisplayWidth, DensityDisplayHeight), ImVec2(0, 1), ImVec2(1, 0), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 0.5f));
 		if (ImGui::Button("加载2D流体")) {
 			pointMode = PointMode::xy;
-			Reset(pointMode, pointInputImage, areaInputImage, areaInputStartIndexImage, modelMatrixList);
+			Reset(pointMode, pointInputImage, areaInputImage, areaInputStartIndexImage);
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("加载3D流体")) {
 			pointMode = PointMode::xyz;
-			Reset(pointMode, pointInputImage3D, areaInputImage3D, areaInputStartIndexImage3D, modelMatrixList);
+			Reset(pointMode, pointInputImage3D, areaInputImage3D, areaInputStartIndexImage3D);
 		}
 // 		CSSpaceLastWidth = CSSpaceWidth;
 // 		CSSpaceLastHeight = CSSpaceHeight;
 // 		CSSpaceLastWidthVelocity = CSSpaceWidthVelocity;
 // 		CSSpaceLastHeightVelocity = CSSpaceHeightVelocity;
-		ImGui::DragFloat("边界宽", &CSSpaceWidth, 0.1f, SPACE_MIN_SCALE, SPACE_MAX_SCALE, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-		ImGui::DragFloat("边界高", &CSSpaceHeight, 0.1f, SPACE_MIN_SCALE, SPACE_MAX_SCALE, "%.3f", ImGuiSliderFlags_AlwaysClamp);
-		if(pointMode == PointMode::xyz) ImGui::DragFloat("边界深", &CSSpaceDepth, 0.1f, SPACE_MIN_SCALE, SPACE_MAX_SCALE, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+		if (pointMode == PointMode::xyz) {
+			ImGui::DragFloat("边界宽", &CSSpaceWidth, 0.1f, SPACE_MIN_SCALE, SPACE_MAX_SCALE, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::DragFloat("边界高", &CSSpaceHeight, 0.1f, SPACE_MIN_SCALE, SPACE_MAX_SCALE, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::DragFloat("边界深", &CSSpaceDepth, 0.1f, SPACE_MIN_SCALE, SPACE_MAX_SCALE, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+		}
+		else
+		{
+			ImGui::DragFloat("边界宽", &CSSpaceDepth, 0.1f, SPACE_MIN_SCALE, SPACE_MAX_SCALE, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+			ImGui::DragFloat("边界高", &CSSpaceHeight, 0.1f, SPACE_MIN_SCALE, SPACE_MAX_SCALE, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+		}
+		
 // 		CSSpaceWidthVelocity = (CSSpaceWidth - CSSpaceLastWidth) / deltaTime;
 // 		CSSpaceHeightVelocity = (CSSpaceHeight - CSSpaceLastHeight) / deltaTime;
 		ImGui::DragFloat("重力大小", &gravity, 0.01f, GRAVITY_MIN_SCALE, GRAVITY_MAX_SCALE, "%.2f", ImGuiSliderFlags_AlwaysClamp);
@@ -1255,14 +1296,28 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			ImGui::DragFloat("可视化最大速度", &MaxVelocity, 1.0f, VELOCITY_MIN_SCALE, VELOCITY_MAX_SCALE, "%.0f", ImGuiSliderFlags_AlwaysClamp);
 
 		//ImGui::InputFloat("边界排斥力", &BorderForce);
-
+		
+		//float* data = predictAreaOutputStartIndexImage.GetDataFromTextureFloat(4);
+		//for (int i = 0; i < areaCertainCount_y; i++) {
+		//	for (int j = 0; j < areaCertainCount_z; j++) {
+		//		int area_y = int(i + areaBias_y);
+		//		int area_z = int(j + areaBias_z);
+		//
+		//		int index = 4 * (area_y * areaCount_x + area_z * areaCount_x * areaCount_y);
+		//		ImGui::Text("%f", data[index]);
+		//	}
+		//}
+		//float* data = predictDensityImage.GetDataFromTextureFloat(4);
+		//for (int i = 0; i < CSImageDepth * CSImageHeight * 4; i += 4) {
+		//	ImGui::Text("%f,%f\n", data[i], data[i + 1]);
+		//}
 		//float* data = predictDensityImage.GetDataFromTextureFloat(4);
 		//for (int i = 0; i < CSImageWidth * CSImageHeight*4; i+=4) {
 		//	ImGui::Text("%f", data[i]);
 		//}
 		//float* data = pointOutputImage.GetDataFromTextureFloat(4);
-		//for (int i = 0; i < CSImageWidth * CSImageHeight * 4; i+=4) {
-		//	if(data[i]>0.9) ImGui::Text("%f,%f", data[i], data[i+1]);
+		//for (int i = 0; i < CSImageDepth * CSImageHeight * 4; i+=4) {
+		//	ImGui::Text("%f,%f", data[i+1], data[i+2]);
 		//}
 		//float* data = positionOutputImage.GetDataFromTextureFloat(4);
 		//for (int i = 0; i < CSDensityImageWidth*CSDensityImageHeight*4; i+=4) {

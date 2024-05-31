@@ -1,7 +1,7 @@
 #shader compute
 #version 460 core 
 
-layout (local_size_x = 10, local_size_y = 10, local_size_z = 1) in;//外部定义group数量,这里定义invocation数量
+layout (local_size_x = 1, local_size_y = 10, local_size_z = 10) in;//外部定义group数量,这里定义invocation数量
 layout (rgba32f, binding = 0) uniform image2D input_image;
 
 //shared vec4 mat_shared[600][600];//共享变量：同一个WorkGroup中的Invocations所共享的变量，它必须由一个Invocation去初始化

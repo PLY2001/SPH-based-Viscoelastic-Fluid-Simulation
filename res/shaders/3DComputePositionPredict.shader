@@ -7,7 +7,7 @@ layout (rgba32f, binding = 1) uniform image2D output_image;
 layout (rgba32f, binding = 2) uniform image2D parameter_image;
 layout (rgba32f, binding = 3) uniform image2D area_output_image;
 
-float pointRadiusSize = 0.005f;//小球半径
+float pointRadiusSize = 0.01f;//小球半径
 float collisionDamping = 0.5f;//边界碰撞衰减因子
 #define PI 3.1415926f
 //读取数据

@@ -1,7 +1,7 @@
 #shader compute
 #version 460 core 
 
-layout (local_size_x = 10, local_size_y = 10, local_size_z = 1) in;//外部定义group数量,这里定义invocation数量
+layout (local_size_x = 1, local_size_y = 10, local_size_z = 10) in;//外部定义group数量,这里定义invocation数量
 layout (rgba32f, binding = 0) uniform image2D input_image;
 layout (rgba32f, binding = 1) uniform image2D output_image;
 layout (rgba32f, binding = 2) uniform image2D parameter_image;
@@ -12,7 +12,7 @@ layout (rgba32f, binding = 6) uniform image2D area_output_image;
 layout (rgba32f, binding = 7) uniform image2D predict_input_image;
 
 //shared vec4 mat_shared[600][600];//共享变量：同一个WorkGroup中的Invocations所共享的变量，它必须由一个Invocation去初始化
-float pointRadiusSize = 0.005f;//小球半径
+float pointRadiusSize = 0.01f;//小球半径
 float collisionDamping = 0.5f;//边界碰撞衰减因子
 #define PI 3.1415926f
 //读取数据
@@ -33,7 +33,7 @@ float ForceSize = imageLoad(parameter_image,ivec2(3,0)).x;//密度力量大小
 float TargetDensity = imageLoad(parameter_image,ivec2(2,0)).x;//获取目标密度
 float ViscositySize = imageLoad(parameter_image,ivec2(2,0)).y;//粘度力量大小
 float NearForceSize = imageLoad(parameter_image,ivec2(2,0)).z;//近密度力量大小
-ivec3 AreaBias[27] = {ivec3(-1,-1,-1),ivec3(0,-1,-1),ivec3(1,-1,-1),ivec3(-1,0,-1),ivec3(0,0,-1),ivec3(1,0,-1),ivec3(-1,1,-1),ivec3(0,1,-1),ivec3(1,1,-1),ivec3(-1,-1,0),ivec3(0,-1,0),ivec3(1,-1,0),ivec3(-1,0,0),ivec3(0,0,0),ivec3(1,0,0),ivec3(-1,1,0),ivec3(0,1,0),ivec3(1,1,0),ivec3(-1,-1,1),ivec3(0,-1,1),ivec3(1,-1,1),ivec3(-1,0,1),ivec3(0,0,1),ivec3(1,0,1),ivec3(-1,1,1),ivec3(0,1,1),ivec3(1,1,1)};
+ivec3 AreaBias[9] = {ivec3(0,-1,-1),ivec3(0,-1,0),ivec3(0,-1,1),ivec3(0,0,-1),ivec3(0,0,0),ivec3(0,0,1),ivec3(0,1,-1),ivec3(0,1,0),ivec3(0,1,1)};
 ivec3 AreaCount = ivec3(imageLoad(parameter_image,ivec2(3,0)).yzw);
 ivec3 AreaIndexBias = ivec3(imageLoad(parameter_image,ivec2(1,0)).xyz);//区域索引偏移量
 ivec2 AreaIndexImageDim = ivec2(imageSize(predict_area_input_start_index_image));
@@ -54,7 +54,7 @@ float SmoothingKernelDerivative(float dis, float radius){ //计算函数斜率
 vec3 GetRandomDir(){ //随机方向
 	float x = fract(sin(DeltaTime)*100000.0*(PointUVW.x+1.0f))*2.0f - 1.0f;
 	float y = fract(sin(DeltaTime*2.0f)*1000000.0*(PointUVW.y+2.0f))*2.0f - 1.0f;
-	float z = fract(sin(DeltaTime*3.0f)*10000000.0*(PointUVW.z+3.0f))*2.0f - 1.0f;
+	float z = fract(sin(DeltaTime*3.0f)*100000000.0*(PointUVW.z+3.0f))*2.0f - 1.0f;
 	return vec3(x,-y,z);
 }
 
@@ -90,7 +90,7 @@ vec3 CalculatePressureAndViscosityForce(ivec2 centerPositionIndex,ivec2 centerVe
 	int area_i_max = AreaCount.x*AreaCount.y*AreaCount.z - 1;
 	ivec2 otherPositionIndex;
 
-	for(int n = 0; n<27; n++){
+	for(int n = 0; n<9; n++){
 		ivec3 area_uvw = center_area_uvw + AreaBias[n];
 		int area_i = area_uvw.x + area_uvw.y * AreaCount.x + area_uvw.z * AreaCount.x * AreaCount.y;
 		if(area_i > -1 && area_i < area_i_max+1) {
@@ -106,7 +106,7 @@ vec3 CalculatePressureAndViscosityForce(ivec2 centerPositionIndex,ivec2 centerVe
 				if(otherPositionIndex != centerPositionIndex) {
 				vec3 otherPostision = imageLoad(predict_input_image,otherPositionIndex).xyz;
 
-				otherPostision = otherPostision + GetRandomDir()*pointRadiusSize;
+				//otherPostision = otherPostision + GetRandomDir()*pointRadiusSize*0.5f;
 
 				vec3 offset = otherPostision - center_position;
 				float dis = distance(otherPostision,center_position);
@@ -120,7 +120,7 @@ vec3 CalculatePressureAndViscosityForce(ivec2 centerPositionIndex,ivec2 centerVe
 				pressureForce = pressureForce + sharedPressure * dir * slope * mass / density;//压力大小和方向
 
 				float influence = SmoothingKernelForViscosity(dis,SmoothingRadius);
-				ivec2 otherVelocityIndex = ivec2(otherPositionIndex.x,otherPositionIndex.y*2);
+				ivec2 otherVelocityIndex = ivec2(otherPositionIndex.x,otherPositionIndex.y + PointDim.z);
 				vec3 other_velocity = imageLoad(predict_input_image,otherVelocityIndex).xyz;
 				viscosityForce = viscosityForce + (other_velocity - center_velocity)*influence;//粘度大小和方向
 				}
@@ -166,7 +166,7 @@ void main()
 	
 
 	//更新
-	velocity = velocity + vec3(acceleration.x,acceleration.y,0.0f)*DeltaTime + vec3(0.0f,-1.0f,0.0f)*Gravity*DeltaTime;
+	velocity = velocity + vec3(0.0,acceleration.y,acceleration.z)*DeltaTime + vec3(0.0f,-1.0f,0.0f)*Gravity*DeltaTime;
 	position = position + velocity*DeltaTime;
 
 	//边界碰撞
@@ -188,6 +188,8 @@ void main()
 	PointVelocityData = vec4(velocity, 0.0f);
     imageStore(output_image,PointPositionUV,PointPositionData);
     imageStore(output_image,PointVelocityUV,PointVelocityData);
+
+
 	int new_area_x = int((position.x + SpaceSize.x / 2.0f )/ SmoothingRadius + AreaIndexBias.x);//根据实际坐标求区域
 	int new_area_y = int((position.y + SpaceSize.y / 2.0f )/ SmoothingRadius + AreaIndexBias.y);//根据实际坐标求区域
 	int new_area_z = int((position.z + SpaceSize.z / 2.0f )/ SmoothingRadius + AreaIndexBias.z);//根据实际坐标求区域

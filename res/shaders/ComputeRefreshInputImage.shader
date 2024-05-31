@@ -2,7 +2,7 @@
 #version 460 core 
 
 //注意！！！！！！！！！！！pointInputImage专用！！！！！！！！
-layout (local_size_x = 10, local_size_y = 10, local_size_z = 1) in;//外部定义group数量,这里定义invocation数量
+layout (local_size_x = 1, local_size_y = 10, local_size_z = 10) in;//外部定义group数量,这里定义invocation数量
 layout (rgba32f, binding = 0) uniform image2D input_image;
 layout (rgba32f, binding = 1) uniform image2D output_image;
 layout (rgba32f, binding = 2) uniform image2D parameter_image;

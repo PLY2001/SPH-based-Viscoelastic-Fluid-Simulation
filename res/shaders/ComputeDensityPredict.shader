@@ -1,7 +1,7 @@
 #shader compute
 #version 460 core 
 
-layout (local_size_x = 10, local_size_y = 10, local_size_z = 1) in;//外部定义group数量,这里定义invocation数量
+layout (local_size_x = 1, local_size_y = 10, local_size_z = 10) in;//外部定义group数量,这里定义invocation数量
 layout (rgba32f, binding = 0) uniform image2D input_image;
 layout (rgba32f, binding = 1) uniform image2D density_output_image;
 layout (rgba32f, binding = 2) uniform image2D parameter_image;
@@ -16,7 +16,7 @@ vec4 PointPositionData=imageLoad(input_image,PointPositionUV);//获取当前球数据
 vec4 PointVelocityData=imageLoad(input_image,PointVelocityUV);//获取当前球数据
 vec3 SpaceSize = imageLoad(parameter_image,ivec2(0,0)).yzw;//获取边界实际大小
 float SmoothingRadius = imageLoad(parameter_image,ivec2(1,0)).w;//获取平滑半径
-ivec3 AreaBias[27] = {ivec3(-1,-1,-1),ivec3(0,-1,-1),ivec3(1,-1,-1),ivec3(-1,0,-1),ivec3(0,0,-1),ivec3(1,0,-1),ivec3(-1,1,-1),ivec3(0,1,-1),ivec3(1,1,-1),ivec3(-1,-1,0),ivec3(0,-1,0),ivec3(1,-1,0),ivec3(-1,0,0),ivec3(0,0,0),ivec3(1,0,0),ivec3(-1,1,0),ivec3(0,1,0),ivec3(1,1,0),ivec3(-1,-1,1),ivec3(0,-1,1),ivec3(1,-1,1),ivec3(-1,0,1),ivec3(0,0,1),ivec3(1,0,1),ivec3(-1,1,1),ivec3(0,1,1),ivec3(1,1,1)};
+ivec3 AreaBias[9] = {ivec3(0,-1,-1),ivec3(0,-1,0),ivec3(0,-1,1),ivec3(0,0,-1),ivec3(0,0,0),ivec3(0,0,1),ivec3(0,1,-1),ivec3(0,1,0),ivec3(0,1,1)};
 ivec3 AreaIndexBias = ivec3(imageLoad(parameter_image,ivec2(1,0)).xyz);//区域索引偏移量
 ivec3 AreaCount = ivec3(imageLoad(parameter_image,ivec2(3,0)).yzw);
 ivec2 AreaIndexImageDim = ivec2(imageSize(area_input_start_index_image));
@@ -63,7 +63,7 @@ void main()
 	int area_i_max = AreaCount.x*AreaCount.y*AreaCount.z - 1;
 	ivec2 otherIndex;
 
-	for(int n = 0; n<27; n++){
+	for(int n = 0; n<9; n++){
 		ivec3 area_uvw = center_area_uvw + AreaBias[n];
 		int area_i = area_uvw.x + area_uvw.y * AreaCount.x + area_uvw.z * AreaCount.x * AreaCount.y;
 		if(area_i > -1 && area_i < area_i_max+1) {

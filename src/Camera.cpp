@@ -2,9 +2,9 @@
 #include <iostream>
 
 Camera::Camera() :
-	cameraPos(glm::vec3(4.0f, 4.0f, 4.0f)), cameraFront(glm::vec3(-1.0f, -1.0f, -1.0f)),
-	cameraUp(glm::vec3(0.0f, 1.0f, 0.0f)), cameraFov(30.0f), firstMouse(true),
-	lastX(0), lastY(0), yaw(-135.0f), pitch(-35.26439f)
+	cameraPos(glm::vec3(40.0f, 0.0f, 0.0f)), cameraFront(glm::vec3(-1.0f, 0.0f, 0.0f)),
+	cameraUp(glm::vec3(0.0f, 1.0f, 0.0f)), cameraFov(10.0f), firstMouse(true),
+	lastX(0), lastY(0), yaw(180.0f), pitch(0.0f)
 {
 }
 	
@@ -79,4 +79,16 @@ glm::mat4 Camera::SetProjection(float aspect)
 {
 	glm::mat4 projection = glm::perspective(glm::radians(cameraFov), aspect, 0.001f, 10000.0f);
 	return projection;
+}
+
+
+void Camera::SetCamera(glm::vec3 pos,glm::vec3 front, glm::vec3 up, float fov, float y, float p)
+{
+	cameraPos = pos;
+	cameraFront = front;
+	cameraUp = up;
+	cameraFov = fov;
+	firstMouse = true;
+	yaw = y;
+	pitch = p;
 }

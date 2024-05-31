@@ -103,6 +103,7 @@ out vec4 color;
 uniform Material material;
 uniform sampler2D shadowmap;
 uniform int VisualMode;
+uniform int PointMode;
 
 in VS_OUT{
 	vec2 v_texcoord;//从顶点着色器传入的变量
@@ -116,35 +117,38 @@ in VS_OUT{
 
 void main() 
 {
-
+	vec3 diffuseColor = VisualMode > 0? fs_in.velocityColor : fs_in.densityColor;
+	vec3 finalColor;
     
 	//阴影
-	vec3 projcoords = fs_in.v_LightSpacePosition.xyz/fs_in.v_LightSpacePosition.w;//光源视角标准化裁剪空间坐标
-	projcoords = projcoords*0.5f+0.5f;//由-1到1转为0到1
-	vec2 texelSize = 5.0f / textureSize(shadowmap, 0);//采样遮挡物平均深度的矩阵大小，矩阵越大，阴影越圆润
-	float shadow = 0.0f;//是否在阴影判断，1为在，0为不在
-	for(int x = -1; x <= 1; ++x)
-	{
-		for(int y = -1; y <= 1; ++y)
+	if(PointMode > 0){
+		vec3 projcoords = fs_in.v_LightSpacePosition.xyz/fs_in.v_LightSpacePosition.w;//光源视角标准化裁剪空间坐标
+		projcoords = projcoords*0.5f+0.5f;//由-1到1转为0到1
+		vec2 texelSize = 5.0f / textureSize(shadowmap, 0);//采样遮挡物平均深度的矩阵大小，矩阵越大，阴影越圆润
+		float shadow = 0.0f;//是否在阴影判断，1为在，0为不在
+		for(int x = -1; x <= 1; ++x)
 		{
-			float pcfDepth = texture(shadowmap, projcoords.xy + vec2(x, y) * texelSize).r; //采样点最小深度（光源视角标准化裁剪空间坐标）
-			if(projcoords.z > pcfDepth+0.00005)//采样点最小深度+0.005和采样点实际深度（光源视角标准化裁剪空间坐标）比较
+			for(int y = -1; y <= 1; ++y)
 			{
-				shadow ++;
-			}
-		}    
+				float pcfDepth = texture(shadowmap, projcoords.xy + vec2(x, y) * texelSize).r; //采样点最小深度（光源视角标准化裁剪空间坐标）
+				if(projcoords.z > pcfDepth+0.00005)//采样点最小深度+0.005和采样点实际深度（光源视角标准化裁剪空间坐标）比较
+				{
+					shadow ++;
+				}
+			}    
+		}
+
+		shadow /= 9.0f;//计算该点是否在阴影（平均化）
+
+		//漫反射
+		vec3 worldLightDir = normalize(vec3(20.0f,20.0f,5.0f)); //获取光源位置
+		vec3 lightColor = vec3(1.0f - shadow);
+		vec3 diffuse = lightColor * diffuseColor * max(0, dot(worldLightDir, normalize(fs_in.v_WorldNormal.xyz)));//+ max(0, dot(worldLight2, normalize(fs_in.v_WorldNormal.xyz)))); // 计算漫反射
+		finalColor = diffuse;
 	}
-
-	shadow /= 9.0f;//计算该点是否在阴影（平均化）
-
-	//漫反射
-	vec3 worldLightDir = normalize(vec3(20.0f,20.0f,0.0f)); //获取光源位置
-	vec3 lightColor = vec3(1.0f - shadow);
-	vec3 diffuseColor = VisualMode > 0? fs_in.velocityColor : fs_in.densityColor;
-    vec3 diffuse = lightColor * diffuseColor * max(0, dot(worldLightDir, normalize(fs_in.v_WorldNormal.xyz)));//+ max(0, dot(worldLight2, normalize(fs_in.v_WorldNormal.xyz)))); // 计算漫反射
-
-
-	vec3 finalColor = diffuse;// * vec3(1.0f - shadow);
+	else{
+		finalColor = diffuseColor;
+	}
 
 
 

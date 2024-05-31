@@ -12,7 +12,7 @@ layout (rgba32f, binding = 6) uniform image2D area_output_image;
 layout (rgba32f, binding = 7) uniform image2D predict_input_image;
 
 //shared vec4 mat_shared[600][600];//共享变量：同一个WorkGroup中的Invocations所共享的变量，它必须由一个Invocation去初始化
-float pointRadiusSize = 0.005f;//小球半径
+float pointRadiusSize = 0.01f;//小球半径
 float collisionDamping = 0.5f;//边界碰撞衰减因子
 #define PI 3.1415926f
 //读取数据
@@ -106,7 +106,7 @@ vec3 CalculatePressureAndViscosityForce(ivec2 centerPositionIndex,ivec2 centerVe
 				if(otherPositionIndex != centerPositionIndex) {
 				vec3 otherPostision = imageLoad(predict_input_image,otherPositionIndex).xyz;
 
-				otherPostision = otherPostision + GetRandomDir()*pointRadiusSize;
+				otherPostision = otherPostision + GetRandomDir()*pointRadiusSize*0.5f;
 
 				vec3 offset = otherPostision - center_position;
 				float dis = distance(otherPostision,center_position);
